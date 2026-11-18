@@ -17,31 +17,52 @@
   <div class="gallery" id="gallery">Loading images...</div>
 
   <script>
-    // REPLACE THESE THREE VALUES WITH YOUR DETAILS
-    const username = 'YOUR_GITHUB_USERNAME';
-    const repo = 'YOUR_REPOSITORY_NAME';
-    const folderPath = ''; // Leave empty for root folder, or use e.g. 'images'
+    const username = 'kpmuthuvelan';
+    const repo = 'paintings';
+    const branch = 'main'; // Change to 'master' if your default branch is master
+    const folderPath = ''; // Leave empty for root folder, or e.g. 'images' (no leading/trailing slashes)
 
     async function loadImages() {
-      const url = `https://github.com{username}/${repo}/contents/${folderPath}`;
-      const response = await fetch(url);
-      const files = await response.json();
       const gallery = document.getElementById('gallery');
-      gallery.innerHTML = '';
+      try {
+        const url = `https://github.com{username}/${repo}/git/trees/${branch}?recursive=1`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+        
+        const data = await response.json();
+        gallery.innerHTML = '';
 
-      files
-        .filter(file => /\.(jpe?g)$/i.test(file.name))
-        .forEach(file => {
+        const images = data.tree.filter(item => {
+          const isBlob = item.type === 'blob';
+          const isJpeg = /\.(jpe?g)$/i.test(item.path);
+          const inFolder = folderPath ? item.path.startsWith(folderPath + '/') : true;
+          return isBlob && isJpeg && inFolder;
+        });
+
+        if (images.length === 0) {
+          gallery.innerHTML = '<p>No JPEG files found.</p>';
+          return;
+        }
+
+        images.forEach(file => {
+          // Encode each path segment to handle spaces or special characters in folder/file names
+          const encodedPath = file.path.split('/').map(encodeURIComponent).join('/');
+          const rawUrl = `https://githubusercontent.com{username}/${repo}/${branch}/${encodedPath}`;
+          const fileName = file.path.split('/').pop();
+
           const card = document.createElement('div');
           card.className = 'card';
           card.innerHTML = `
-            <a href="${file.download_url}" target="_blank">
-              <img src="${file.download_url}" alt="${file.name}" loading="lazy">
+            <a href="${rawUrl}" target="_blank">
+              <img src="${rawUrl}" alt="${fileName}" loading="lazy">
             </a>
-            <p>${file.name}</p>
+            <p>${file.path}</p>
           `;
           gallery.appendChild(card);
         });
+      } catch (error) {
+        gallery.innerHTML = `<p>Error loading images: ${error.message}</p>`;
+      }
     }
     loadImages();
   </script>
