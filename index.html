@@ -26,7 +26,7 @@
       const gallery = document.getElementById('gallery');
       try {
         const apiHost = 'https://api.github.com';
-        const url = apiHost + '/repos/' + username + '/' + repo + '/git/trees/' + branch + '}?recursive=1';
+        const url = apiHost + '/repos/' + username + '/' + repo + '/git/trees/' + branch + '?recursive=1';
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
         
@@ -48,7 +48,7 @@
         images.forEach(file => {
           // Encode each path segment to handle spaces or special characters in folder/file names
           const encodedPath = file.path.split('/').map(encodeURIComponent).join('/');
-          const rawUrl = `https://raw.githubusercontent.com/{username}/${repo}/${branch}/${encodedPath}`;
+          const rawUrl = `https://raw.githubusercontent.com/${username}/${repo}/${branch}/${encodedPath}`;
           const fileName = file.path.split('/').pop();
 
           const card = document.createElement('div');
