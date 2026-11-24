@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Gallery</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; background: #f4f4f9; }
+    .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; }
+    .card { background: white; padding: 0.5rem; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    img { width: 100%; height: 200px; object-fit: cover; border-radius: 4px; display: block; }
+    p { margin: 0.5rem 0 0; font-size: 0.9rem; color: #333; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <h1>Repository Images</h1>
+  <div class="gallery" id="gallery">Loading images...</div>
+
+  <script>
+    const username = 'kpmuthuvelan';
+    const repo = 'paintings';
+    const branch = 'main'; // Change to 'master' if your default branch is master
+    const folderPath = ''; // Leave empty for root folder, or e.g. 'images' (no leading/trailing slashes)
+
+    async function loadImages() {
+      const gallery = document.getElementById('gallery');
+      try {
+        const apiHost = 'https://api.github.com';
+        const url = apiHost + '/repos/' + username + '/' + repo + '/git/trees/' + branch + '?recursive=1';
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+        
+        const data = await response.json();
+        gallery.innerHTML = '';
+
+        const images = data.tree.filter(item => {
+          const isBlob = item.type === 'blob';
+          const isJpeg = /\.(jpe?g)$/i.test(item.path);
+          const inFolder = folderPath ? item.path.startsWith(folderPath + '/') : true;
+          return isBlob && isJpeg && inFolder;
+        });
+
+        if (images.length === 0) {
+          gallery.innerHTML = '<p>No JPEG files found.</p>';
+          return;
+        }
+
+        images.forEach(file => {
+          // Encode each path segment to handle spaces or special characters in folder/file names
+          const encodedPath = file.path.split('/').map(encodeURIComponent).join('/');
+          const rawUrl = `https://raw.githubusercontent.com/${username}/${repo}/${branch}/${encodedPath}`;
+          const fileName = file.path.split('/').pop();
+
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <a href="${rawUrl}" target="_blank">
+              <img src="${rawUrl}" alt="${fileName}" loading="lazy">
+            </a>
+            <p>${file.path}</p>
+          `;
+          gallery.appendChild(card);
+        });
+      } catch (error) {
+        gallery.innerHTML = `<p>Error loading images: ${error.message}</p>`;
+      }
+    }
+    loadImages();
+  </script>
+</body>
+</html>
